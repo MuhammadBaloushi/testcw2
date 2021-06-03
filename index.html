@@ -1,0 +1,202 @@
+<html>
+   <head>
+      <title>CW 2</title>
+      <script src="https://unpkg.com/vue"></script>
+    
+   </head>
+   <body>
+      <div id="app">
+       
+            <h1> Class Work 2 </h1>
+          
+      
+      
+            <div v-if='showProduct'>
+               <button id="checkoutBtn" @click='showCheckout' v-if='cart.length > 0'> Checkout</button>
+           
+              
+            
+               <h1>Topics</h1>
+             
+               
+              
+                  <div v-for="product in products" :key="product.id">
+                   
+                              <h2 v-text ="product.title"></h2>
+                              <p v-html ="product.location"></p>
+                              <p> Price: {{ product.cost }} </p>
+                              <button @click='addToCart(product)' v-if='canAddToCart(product)'> Add to Cart </button>
+                              <span v-if="product.space === cartCount(product.id)">
+                                 Sold out!
+                                 </span>
+                                 <span v-else-if="product.space - cartCount(product.id) < 5">
+                                    Only {{product.space - cartCount(product.id)}} spaces left!!
+                                    </span>
+                                    <span v-else>Buy Now!</span>
+                              <button disabled ='disabled' v-else>Add to Cart</button>
+                              
+                          
+                       
+                  </div>
+                
+             
+            </div>
+            <div v-else = 'showCheckout'>
+           
+               <h2>Checkout Order</h2>
+              
+                  <p>
+                     <strong>First Name:</strong>
+                     <input id="firstName" required v-model.trim="order.name" type="text" />
+                  </p>
+                  <p><strong>Phone : </strong><input id="phone" required v-model.number='order.phone' type="number"></p>
+                  <button @click='postOrder'>Place Order</button>
+              
+               <hr>
+               <h2>Order Information:</h2>
+               <p>First Name: {{order.name}}</p>
+               <p>Phone: {{order.phone_number}}</p>
+               <p> Order Items: </p>
+               <template>
+                  <ul class="list-group">
+                     <li class="list-group-item" v-for="(product, index) in cart" :key="product.id">
+                        {{product.title}}: SAR{{product.price}}
+                        <button  @click = 'removeProduct(); removeProductID()' >Remove</button>
+                     </li>
+                  </ul>
+               </template>
+            </div>
+               
+         
+      </div>
+   </body>
+      <script type="text/javascript">
+         var webstoreall = new Vue({
+            el: '#app',
+            data: {
+               showProduct: true,
+               sitename: 'All CW WORK ',
+               products: [],
+               cart: [],
+               cartID: [],
+               order: {
+                  name: "",
+                  phone: "",
+               },
+               order_details:[]
+
+            },
+            methods:{
+              addToCart: function (product) {
+               const newSpace = product.space - this.cartCount(product.id) - 1;
+               console.log(newSpace)
+                  this.cart.push({
+                      id: product.id,
+                      title: product.title,
+                      price: product.cost,
+                      space: product.space, 
+                      newID: product._id
+                       })
+                      this.cartID.push (product.id)
+               fetch (`https://cst3145mdx.herokuapp.com/collection/lessons/${product._id}`,{
+                  method: 'PUT',
+                  headers:{
+                     'Content-Type': 'application/json',
+                  },
+                   body: JSON.stringify({space: newSpace })
+                  })
+                  .then(function (data) {
+                     console.log(data);
+
+                        }); 
+                     
+                     },
+              postOrder: function (product) {
+               fetch ('https://cst3145mdx.herokuapp.com/collection/orders',{
+               method: 'POST',
+               headers:{
+                  'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({Name: this.order.name, Phone: this.order.phone, ProductsInOrder: this.cart.map(({title}) => title) })
+               })
+               .then(function (data) {
+                  console.log(data);
+                  
+               }); 
+               alert('Your order has been placed!');
+               this.cart.splice(product);
+                  this.cartID.splice(product);
+                  this.order.name = "";
+                  this.order.phone = "";
+                  location.reload();  
+
+              },
+              addToCheckOutCart(product){
+                  this.addToCheckOutCart.push(product);
+              },
+              showCheckout: function(){
+                  this.showProduct = this.showProduct ? false : true;
+              },
+              submitForm(product){
+                  alert('Your order has been placed')
+                  this.cart.splice(product);
+                  this.cartID.splice(product);
+                  this.order.firstName = "";
+                  this.order.lastName = "";
+                  this.order.phone = "";
+              },
+                canAddToCart: function(product){
+                  return product.space > this.cartCount(product.id);
+              },
+              canGoToCheckout(){
+                  return cartItemCount.length > 0;
+              },
+              removeProduct(product){
+                  this.cart.splice(product, 1);
+              },
+              removeProductID(product){
+                  this.cartID.splice(product, 1);
+              },
+              cartCount(id){
+                  let count = 0;
+                  for (let i = 0; i < this.cartID.length; i++){
+                      if(this.cartID[i] === id){
+                          count++
+                      }
+                  }
+                  return count;
+              }
+          },
+          computed:{
+           
+              cartItemCount: function(){
+                  return this.cartID.length;
+              },
+          },
+          
+            created: function() {
+             
+               fetch('https://cst3145mdx.herokuapp.com/collection/lessons').then(
+                function (response) {
+                    response.json().then(
+                        function (json) {
+                        webstoreall.products = json;
+                        console.log(webstoreall.products)
+                    });
+            })
+            fetch('https://cst3145mdx.herokuapp.com/collection/orders').then(
+                function (response) {
+                    response.json().then(
+                        function (json) {
+                        webstoreall.order_details = json;
+                        console.log(webstoreall.order_details)
+                    });
+            })
+
+            
+      }
+})      
+
+</script>
+ 
+</html>
